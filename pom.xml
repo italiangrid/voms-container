@@ -92,4 +92,24 @@
       <artifactId>commons-cli</artifactId>
     </dependency>
   </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>EMI</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <package.prefix>/</package.prefix>
+        <package.confdir>/etc/voms-admin</package.confdir>
+      </properties>
+   </profile>
+   <profile>
+      <id>local</id>
+      <properties>
+        <package.prefix>/opt/voms</package.prefix>
+        <package.confdir>/opt/voms/etc/voms-admin</package.confdir>
+      </properties>
+    </profile>
+  </profiles>
 </project>

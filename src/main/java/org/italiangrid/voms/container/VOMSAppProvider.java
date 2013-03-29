@@ -30,10 +30,11 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 	private static final Logger log = LoggerFactory
 		.getLogger(VOMSAppProvider.class);
 
-	private final String configurationDir;
-	private final String warFile;
-	private final String deploymentDir;
-	private final String hostname;
+	private String configurationDir;
+	private String warFile;
+	private String deploymentDir;
+	private String hostname;
+	private String port;
 
 	private int scanIntervalInSeconds = DEFAULT_SCAN_INTERVAL_IN_SECONDS;
 
@@ -71,13 +72,8 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 
 	private Map<String, App> vomsApps = new HashMap<String, App>();
 
-	public VOMSAppProvider(String confDir, String warFile, String deploymentDir,
-		String hostname) {
+	public VOMSAppProvider() {
 
-		this.configurationDir = confDir;
-		this.warFile = warFile;
-		this.deploymentDir = deploymentDir;
-		this.hostname = hostname;
 	}
 
 	protected void confDirSanityChecks() {
@@ -150,7 +146,7 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 		log.debug("Request to start vo {}", voName);
 
 		if (!voNameIsValid(voName)) {
-			log.error("VO {} is not configured on this host!");
+			log.error("VO {} is not configured on this host!", voName);
 			return;
 		}
 		App a = createApp(voName);
@@ -230,6 +226,8 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 
 		vomsWebappContext.setInitParameter("VO_NAME", vo);
 		vomsWebappContext.setInitParameter("CONF_DIR", configurationDir);
+		vomsWebappContext.setInitParameter("HOST", hostname);
+		vomsWebappContext.setInitParameter("PORT", port);
 
 		vomsWebappContext.addLifeCycleListener(VOListener.INSTANCE);
 
@@ -311,6 +309,96 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 			scanner.removeListener(scannerListener);
 			scanner = null;
 		}
+	}
+
+	
+	/**
+	 * @return the configurationDir
+	 */
+	public String getConfigurationDir() {
+	
+		return configurationDir;
+	}
+
+	
+	/**
+	 * @param configurationDir the configurationDir to set
+	 */
+	public void setConfigurationDir(String configurationDir) {
+	
+		this.configurationDir = configurationDir;
+	}
+
+	
+	/**
+	 * @return the warFile
+	 */
+	public String getWarFile() {
+	
+		return warFile;
+	}
+
+	
+	/**
+	 * @param warFile the warFile to set
+	 */
+	public void setWarFile(String warFile) {
+	
+		this.warFile = warFile;
+	}
+
+	
+	/**
+	 * @return the deploymentDir
+	 */
+	public String getDeploymentDir() {
+	
+		return deploymentDir;
+	}
+
+	
+	/**
+	 * @param deploymentDir the deploymentDir to set
+	 */
+	public void setDeploymentDir(String deploymentDir) {
+	
+		this.deploymentDir = deploymentDir;
+	}
+
+	
+	/**
+	 * @return the hostname
+	 */
+	public String getHostname() {
+	
+		return hostname;
+	}
+
+	
+	/**
+	 * @param hostname the hostname to set
+	 */
+	public void setHostname(String hostname) {
+	
+		this.hostname = hostname;
+	}
+
+	
+	/**
+	 * @return the port
+	 */
+	public String getPort() {
+	
+		return port;
+	}
+
+	
+	/**
+	 * @param port the port to set
+	 */
+	public void setPort(String port) {
+	
+		this.port = port;
 	}
 
 }

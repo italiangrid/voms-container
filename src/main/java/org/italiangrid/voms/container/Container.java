@@ -154,8 +154,15 @@ public class Container {
 		contexts.setServer(server);
 
 		deploymentManager = new DeploymentManager();
-		VOMSAppProvider provider = new VOMSAppProvider(confDir, war, deployDir,
-			host);
+		
+		VOMSAppProvider provider = new VOMSAppProvider();
+		
+		provider.setConfigurationDir(confDir);
+		provider.setDeploymentDir(deployDir);
+		provider.setHostname(host);
+		provider.setPort(port);
+		provider.setWarFile(war);
+		
 
 		deploymentManager.addAppProvider(provider);
 		deploymentManager.setContexts(contexts);
