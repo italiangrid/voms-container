@@ -1,26 +1,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
-  <groupId>org.italiangrid</groupId>
+  <parent>
+    <groupId>org.italiangrid</groupId>
+    <artifactId>voms-admin-parent</artifactId>
+    <version>1</version>
+  </parent>
+  
   <artifactId>voms-container</artifactId>
   <version>3.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>voms-container</name>
-  <url>https://github.com/italiangrid/voms-container</url>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-    <slf4j.version>1.6.6</slf4j.version>
-    <logback.version>1.0.6</logback.version>
-    <https-utils.version>0.2.1</https-utils.version>
-    <jetty.version>8.1.4.v20120524</jetty.version>
-    <commons-io.version>1.3.2</commons-io.version>
-    <commons-cli.version>1.1</commons-cli.version>
-  </properties>
+  <url>http://maven.apache.org</url>
 
   <build>
     <finalName>voms-admin-server</finalName>
@@ -42,7 +34,7 @@
         <directory>src/main/resources</directory>
         <includes>
           <include>status-webapp</include>
-          <include>status-webapp/**</include>
+          <include>status-webapp/**/*</include>
         </includes>
       </resource>
     </resources>
@@ -50,18 +42,7 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.4</version>
         <configuration>
           <archive>
             <manifest>
@@ -80,85 +61,36 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons-io.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
     </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp</artifactId>
-      <version>${jetty.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.italiangrid</groupId>
       <artifactId>https-utils</artifactId>
-      <version>${https-utils.version}</version>
     </dependency>
 
     <dependency>
       <groupId>commons-cli</groupId>
       <artifactId>commons-cli</artifactId>
-      <version>${commons-cli.version}</version>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>local-staging</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <distributionManagement>
-        <repository>
-          <id>cnaf-releases</id>
-          <name>CNAF releases</name>
-          <url>http://radiohead.cnaf.infn.it:8081/nexus/content/repositories/cnaf-releases/</url>
-        </repository>
-
-        <snapshotRepository>
-          <id>cnaf-snapshots</id>
-          <name>CNAF snapshots</name>
-          <url>http://radiohead.cnaf.infn.it:8081/nexus/content/repositories/cnaf-snapshots/</url>
-        </snapshotRepository>
-
-      </distributionManagement>
-    </profile>
-
-    <profile>
-      <id>EMI</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <package.prefix>/</package.prefix>
-        <package.confdir>/etc/voms-admin</package.confdir>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>local</id>
-      <properties>
-        <package.prefix>/opt/voms</package.prefix>
-        <package.confdir>/opt/voms/etc/voms-admin</package.confdir>
-      </properties>
-    </profile>
-  </profiles>
 </project>
