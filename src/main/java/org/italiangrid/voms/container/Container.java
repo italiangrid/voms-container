@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -20,17 +21,19 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.italiangrid.utils.https.JettyRunThread;
 import org.italiangrid.utils.https.SSLOptions;
 import org.italiangrid.utils.https.ServerFactory;
 import org.italiangrid.utils.https.impl.canl.CANLListener;
 import org.italiangrid.voms.container.listeners.ServerListener;
-import org.italiangrid.voms.status.VOMSStatusHandler;
 import org.italiangrid.voms.util.CertificateValidatorBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,11 @@ public class Container {
 
 	public static final String DEFAULT_TMP_PREFIX = "/var/tmp";
 	public static final String DEFAULT_DEPLOY_DIR = "/usr/share/voms-admin/vo.d";
+	
+	public static final String HTTP_CONNECTOR_NAME = "voms-http";
+	public static final String HTTPS_CONNECTOR_NAME = "voms-https";
+	
+	public static final int HTTP_CONNECTOR_PORT = 8088;
 
 	private static final String ARG_WAR = "war";
 	private static final String ARG_CONFDIR = "confdir";
@@ -169,6 +177,26 @@ public class Container {
 
 	}
 
+	protected void addNameToHTTPSConnector(){
+		
+		for (Connector c: server.getConnectors()){
+			if (c.getPort() == Integer.parseInt(port)){
+				SslSelectChannelConnector conn = (SslSelectChannelConnector)c;
+				conn.setName(HTTPS_CONNECTOR_NAME);
+			}
+		}
+		
+	}
+	
+	protected void configureLocalHTTPConnector(){
+		SelectChannelConnector conn = new SelectChannelConnector();
+		conn.setHost("localhost");
+		conn.setPort(HTTP_CONNECTOR_PORT);
+		conn.setName(HTTP_CONNECTOR_NAME);
+		server.addConnector(conn);
+	}
+	
+	
 	protected void configureJettyServer() {
 
 		SSLOptions options = getSSLOptions();
@@ -187,16 +215,17 @@ public class Container {
 
 		server = ServerFactory.newServer(host, Integer.parseInt(port),
 			getSSLOptions(), validator, maxConnections, maxRequestQueueSize);
-
+		
+		addNameToHTTPSConnector();
+		configureLocalHTTPConnector();
+		
 		server.addLifeCycleListener(new ServerListener());
 
 		configureDeploymentManager();
-		VOMSStatusHandler statusHandler = new VOMSStatusHandler(deploymentManager);
-		statusHandler.setHostname(host);
-
+		
 		// Setup handlers structure
-		handlers.setHandlers(new Handler[] { statusHandler, contexts,
-			new DefaultHandler() });
+		handlers.setHandlers(new Handler[] { contexts,
+				new DefaultHandler() });
 
 		server.setHandler(handlers);
 

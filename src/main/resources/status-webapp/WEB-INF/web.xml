@@ -39,6 +39,17 @@
         <jsp-file>/WEB-INF/json-index.jsp</jsp-file>
     </servlet>
     
+    <servlet>
+        <description>The Plain text status servlet</description>
+        <servlet-name>status</servlet-name>
+        <jsp-file>/WEB-INF/status.jsp</jsp-file>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>status</servlet-name>
+        <url-pattern>/status</url-pattern>
+    </servlet-mapping>
+    
     <servlet-mapping>
         <servlet-name>index</servlet-name>
         <url-pattern>/vomses</url-pattern>

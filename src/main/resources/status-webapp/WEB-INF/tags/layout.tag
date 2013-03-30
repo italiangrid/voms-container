@@ -33,6 +33,9 @@ html,body {
 
 #footer {
   background-color: #f5f5f5;
+}
+
+#version{
   padding-top: .3em;
 }
 
@@ -76,7 +79,7 @@ html,body {
   </div>
   <div id="footer">
     <div class="container">
-        <div id="footer">
+        <div id="version">
           <small class="muted">VOMS Admin version ${version}</small>
         </div>
     </div>

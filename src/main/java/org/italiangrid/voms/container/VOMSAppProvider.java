@@ -4,19 +4,24 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.italiangrid.voms.container.listeners.VOListener;
 import org.italiangrid.voms.container.listeners.VOMSESListener;
+import org.italiangrid.voms.status.VOMSStatusFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,6 +234,9 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 		vomsWebappContext.setInitParameter("HOST", hostname);
 		vomsWebappContext.setInitParameter("PORT", port);
 
+		vomsWebappContext.setConnectorNames(
+			new String[]{Container.HTTPS_CONNECTOR_NAME});
+		
 		vomsWebappContext.addLifeCycleListener(VOListener.INSTANCE);
 
 		return vomsWebappContext;
@@ -248,10 +256,18 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 
 		statusContext.setInitParameter("host", hostname);
 		statusContext.setInitParameter("confdir", configurationDir);
+		statusContext.setConnectorNames(new String[]{ Container.HTTP_CONNECTOR_NAME, 
+			Container.HTTPS_CONNECTOR_NAME});
+		
+		VOMSStatusFilter f = new VOMSStatusFilter(deploymentManager, hostname, port);
+		FilterHolder fh = new FilterHolder(f);
+		
+		statusContext.addFilter(fh, "/*", EnumSet.of(DispatcherType.FORWARD, 
+			DispatcherType.REQUEST));
 
 		statusContext.setThrowUnavailableOnStartupException(true);
 		statusContext.addLifeCycleListener(new VOMSESListener());
-
+		
 		return statusContext;
 	}
 
