@@ -46,7 +46,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <classpathPrefix>${package.prefix}/var/lib/voms-admin/lib/</classpathPrefix>
+              <classpathPrefix>${package.prefix}var/lib/voms-admin/lib/</classpathPrefix>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
               <mainClass>org.italiangrid.voms.container.Container</mainClass>
             </manifest>
@@ -107,7 +107,8 @@
    <profile>
       <id>local</id>
       <properties>
-        <package.prefix>/opt/voms</package.prefix>
+        <!-- Please keep trailing / ! -->
+        <package.prefix>/opt/voms/</package.prefix>
         <package.confdir>/opt/voms/etc/voms-admin</package.confdir>
       </properties>
     </profile>
