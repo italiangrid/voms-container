@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public class Container {
 	public static final String HTTP_CONNECTOR_NAME = "voms-http";
 	public static final String HTTPS_CONNECTOR_NAME = "voms-https";
 	
-	public static final int HTTP_CONNECTOR_PORT = 8088;
+	public static final String HTTP_CONNECTOR_PORT = "8088";
 
 	private static final String ARG_WAR = "war";
 	private static final String ARG_CONFDIR = "confdir";
@@ -76,6 +75,7 @@ public class Container {
 
 	private String host;
 	private String port;
+	private String statusPort;
 
 	private String certFile;
 	private String keyFile;
@@ -191,7 +191,7 @@ public class Container {
 	protected void configureLocalHTTPConnector(){
 		SelectChannelConnector conn = new SelectChannelConnector();
 		conn.setHost("localhost");
-		conn.setPort(HTTP_CONNECTOR_PORT);
+		conn.setPort(Integer.parseInt(statusPort));
 		conn.setName(HTTP_CONNECTOR_NAME);
 		server.addConnector(conn);
 	}
@@ -326,12 +326,21 @@ public class Container {
 	private void loadConfiguration() {
 
 		confDir = SysconfigUtil.getConfDir();
-
+		
+		// FIXME: move this to standard server conf?
+		// Then it would be harder to source from the init
+		// script, which is the main (and only) client of
+		// the status handler
+		statusPort = SysconfigUtil
+			.loadSysconfig()
+			.getProperty(SysconfigUtil.SYSCONFIG_STATUS_PORT, 
+				HTTP_CONNECTOR_PORT);
+		
 		loadServerConfiguration(confDir);
 
 		host = getConfigurationProperty(ConfigurationProperty.HOST);
-
 		port = getConfigurationProperty(ConfigurationProperty.PORT);
+		
 
 		certFile = getConfigurationProperty(ConfigurationProperty.CERT);
 		keyFile = getConfigurationProperty(ConfigurationProperty.KEY);
@@ -426,6 +435,7 @@ public class Container {
 
 		log.info("VOMS Admin version {}.", Version.version());
 		log.info("Binding on: {}:{}", host, port);
+		log.info("HTTP status handler listening on: {}", statusPort);
 		log.info("Service credentials: {}, {}", certFile, keyFile);
 		log.info("Trust anchors directory: {}", trustDir);
 		log.info("Trust anchors directory refresh interval (in minutes): {}",
@@ -434,7 +444,7 @@ public class Container {
 		log.info("Configuration dir: {}", confDir);
 		log.info("Deployment dir: {}", deployDir);
 
-		log.info("Max concurrent connections: {}",
+		log.info("Max # of concurrent connections: {}",
 			getConfigurationProperty(ConfigurationProperty.MAX_CONNECTIONS));
 
 		log.info("Max request queue size: {}",

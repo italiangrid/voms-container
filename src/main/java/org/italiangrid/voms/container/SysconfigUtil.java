@@ -34,6 +34,7 @@ public class SysconfigUtil {
 	public static final String SYSCONFIG_DEFAULT_FILE_PATH = "/etc/sysconfig/voms-admin";
 
 	public static final String SYSCONFIG_CONF_DIR = "CONF_DIR";
+	public static final String SYSCONFIG_STATUS_PORT = "VOMS_STATUS_PORT";
 
 	public static final String DEFAULT_PREFIX = "/";
 	public static final String PREFIX_PROP_NAME = "package.prefix";
