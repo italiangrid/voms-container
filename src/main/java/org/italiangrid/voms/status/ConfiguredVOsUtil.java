@@ -3,6 +3,7 @@ package org.italiangrid.voms.status;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.italiangrid.voms.container.SysconfigUtil;
@@ -35,7 +36,8 @@ public class ConfiguredVOsUtil {
 				voNames.add(f.getName());
 
 		}
-
+		
+		Collections.sort(voNames);
 		return voNames;
 	}
 }
