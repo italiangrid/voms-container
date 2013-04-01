@@ -31,18 +31,30 @@
         <description>The Index servlet</description>
         <servlet-name>index</servlet-name>
         <jsp-file>/index.jsp</jsp-file>
+        <init-param>
+          <param-name>cacheControl</param-name>
+          <param-value>max-age=0,public</param-value>
+        </init-param>
     </servlet>
     
     <servlet>
         <description>The JSON index servlet</description>
         <servlet-name>json-index</servlet-name>
         <jsp-file>/WEB-INF/json-index.jsp</jsp-file>
+        <init-param>
+          <param-name>cacheControl</param-name>
+          <param-value>max-age=0,public</param-value>
+        </init-param>
     </servlet>
     
     <servlet>
         <description>The Plain text status servlet</description>
         <servlet-name>status</servlet-name>
         <jsp-file>/WEB-INF/status.jsp</jsp-file>
+        <init-param>
+          <param-name>cacheControl</param-name>
+          <param-value>max-age=0,public</param-value>
+        </init-param>
     </servlet>
     
     <servlet-mapping>
