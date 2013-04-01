@@ -3,8 +3,8 @@ package org.italiangrid.voms.status;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.TreeSet;
 
 import org.italiangrid.voms.container.SysconfigUtil;
 
@@ -16,7 +16,7 @@ public class ConfiguredVOsUtil {
 
 	public static List<String> getConfiguredVONames() {
 
-		List<String> voNames = new ArrayList<String>();
+		TreeSet<String> voNames = new TreeSet<String>();
 
 		File confDir = new File(SysconfigUtil.getConfDir());
 
@@ -37,7 +37,6 @@ public class ConfiguredVOsUtil {
 
 		}
 		
-		Collections.sort(voNames);
-		return voNames;
+		return new ArrayList<String>(voNames);
 	}
 }
