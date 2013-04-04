@@ -31,6 +31,7 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 
 	public static final String DEFAULT_TMP_PREFIX = "/var/tmp";
 	public static final int DEFAULT_SCAN_INTERVAL_IN_SECONDS = 10;
+	public static final String ORACLE_JAR_NAME = "ojdbc6.jar";
 
 	private static final Logger log = LoggerFactory
 		.getLogger(VOMSAppProvider.class);
@@ -228,6 +229,8 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 		// Consider logback and slf4j server classes
 		vomsWebappContext.addServerClass("ch.qos.logback.");
 		vomsWebappContext.addServerClass("org.slf4j.");
+		
+		vomsWebappContext.addSystemClass("oracle.");
 
 		vomsWebappContext.setInitParameter("VO_NAME", vo);
 		vomsWebappContext.setInitParameter("CONF_DIR", configurationDir);
