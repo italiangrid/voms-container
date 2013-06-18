@@ -87,27 +87,6 @@ public class Container {
 	private HandlerCollection handlers = new HandlerCollection();
 	private ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-	/**
-	 * Initializes the Jetty temp directory as the default directory created by
-	 * Jetty confuses xwork which has a bug and doesn't find classes when the WAR
-	 * is expanded in the tmp directory.
-	 * 
-	 * TODO: check if recent versions of xwork solve this.
-	 */
-	protected File getJettyTmpDirForVO(String vo) {
-
-		String baseDirPath = String.format("%s/%s/%s", DEFAULT_TMP_PREFIX,
-			"voms-webapp", vo).replaceAll("/+", "/");
-
-		File basePath = new File(baseDirPath);
-
-		if (!basePath.exists()) {
-			basePath.mkdirs();
-		}
-
-		return basePath;
-	}
-
 	protected SSLOptions getSSLOptions() {
 
 		SSLOptions options = new SSLOptions();
