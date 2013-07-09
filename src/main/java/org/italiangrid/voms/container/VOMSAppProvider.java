@@ -2,6 +2,7 @@ package org.italiangrid.voms.container;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 import javax.servlet.DispatcherType;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -196,9 +198,23 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 
 		File basePath = new File(baseDirPath);
 
-		if (!basePath.exists()) {
-			basePath.mkdirs();
+		if (basePath.exists()){
+			try {
+
+				log.debug("Cleaning up VO tmp dir: {}", basePath);
+				FileUtils.deleteDirectory(basePath);
+			
+			} catch (IOException e) {
+			
+				log.error("Error removing temp directory {}: {}", 
+					basePath.getAbsolutePath(),
+					e.getMessage());
+				throw new RuntimeException(e);
+			}
 		}
+		
+		log.debug("Creating VO tmp dir: {}", basePath);
+		basePath.mkdirs();
 
 		return basePath;
 	}
