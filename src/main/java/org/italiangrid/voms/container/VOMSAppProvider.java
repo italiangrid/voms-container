@@ -254,7 +254,7 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 		vomsWebappContext.setInitParameter("PORT", port);
 
 		vomsWebappContext.setConnectorNames(
-			new String[]{Container.HTTPS_CONNECTOR_NAME});
+			new String[]{Container.HTTPS_CONNECTOR_NAME, "voms-"+vo});
 		
 		vomsWebappContext.addLifeCycleListener(VOListener.INSTANCE);
 

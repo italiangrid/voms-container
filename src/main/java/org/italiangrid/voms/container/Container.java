@@ -2,12 +2,15 @@ package org.italiangrid.voms.container;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
@@ -20,6 +23,7 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -32,6 +36,8 @@ import org.italiangrid.utils.https.JettyRunThread;
 import org.italiangrid.utils.https.SSLOptions;
 import org.italiangrid.utils.https.ServerFactory;
 import org.italiangrid.utils.https.impl.canl.CANLListener;
+import org.italiangrid.utils.https.impl.canl.CANLSSLConnectorConfigurator;
+import org.italiangrid.voms.container.legacy.VOMSSslConnectorConfigurator;
 import org.italiangrid.voms.container.listeners.ServerListener;
 import org.italiangrid.voms.util.CertificateValidatorBuilder;
 import org.slf4j.Logger;
@@ -64,6 +70,9 @@ public class Container {
 	private static final String ARG_CONFDIR = "confdir";
 	private static final String ARG_DEPLOYDIR = "deploydir";
 
+	private static final String SERVICE_PROPERTIES_FILE = "service.properties";
+	private static final String SERVICE_PORT_KEY = "voms.aa.x509.additional_port";
+	
 	private Options cliOptions;
 	private CommandLineParser parser = new GnuParser();
 
@@ -86,7 +95,7 @@ public class Container {
 	private DeploymentManager deploymentManager;
 	private HandlerCollection handlers = new HandlerCollection();
 	private ContextHandlerCollection contexts = new ContextHandlerCollection();
-
+	
 	protected SSLOptions getSSLOptions() {
 
 		SSLOptions options = new SSLOptions();
@@ -112,6 +121,43 @@ public class Container {
 		}
 	}
 
+	protected Properties getVOServiceProperties(String voName){
+		if (!getConfiguredVONames().contains(voName))
+			throw new IllegalArgumentException("VO "+voName+" is " +
+					"not configured on this host.");
+		
+		Properties voServiceProps = new Properties();
+		
+		String propsPath = String.format("%s/%s/%s", 
+			confDir, 
+			voName, 
+			SERVICE_PROPERTIES_FILE).replaceAll("/+", "/");
+		
+		try {
+			voServiceProps.load(new FileInputStream(propsPath));
+			return voServiceProps;
+			
+		} catch (IOException e) {
+			log.error("Error reading service properties configuration for VO {}: {}.",
+				new Object[]{voName,e.getMessage()},
+				e);
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+	
+	
+	protected Map<Integer, String> getConfiguredVOPortMappings(){
+		Map<Integer, String> voPorts = new HashMap<Integer, String>();
+		
+		for (String vo: getConfiguredVONames()){
+			Properties sp = getVOServiceProperties(vo);
+			if (sp.containsKey(SERVICE_PORT_KEY))
+				voPorts.put(Integer.parseInt(sp.getProperty(SERVICE_PORT_KEY)), vo);
+		}
+		
+		return voPorts;
+	}
+	
 	protected List<String> getConfiguredVONames() {
 
 		confDirSanityChecks();
@@ -175,6 +221,29 @@ public class Container {
 		server.addConnector(conn);
 	}
 	
+	protected void configureLegacyConnectors(String host, 
+		X509CertChainValidatorExt validator,
+		SSLOptions options, int maxConnections, int maxRequestQueueSize){
+		
+		VOMSSslConnectorConfigurator configurator = 
+			new VOMSSslConnectorConfigurator(validator);
+		
+		Map<Integer, String> voMappings = getConfiguredVOPortMappings();
+		
+		for (Map.Entry<Integer, String> e: voMappings.entrySet()){
+			int voPort = e.getKey();
+			
+			Connector c = configurator.configureConnector(host,voPort,options);
+			
+			((SslSelectChannelConnector)c).setName("voms-"+e.getValue());
+			
+			server.addConnector(c);
+			log.info("Configured VOMS legacy connector for VO {} on port {}.",
+				e.getValue(), voPort);
+		}
+		
+	}
+	
 	
 	protected void configureJettyServer() {
 
@@ -202,11 +271,29 @@ public class Container {
 
 		configureDeploymentManager();
 		
-		// Setup handlers structure
-		handlers.setHandlers(new Handler[] { contexts,
-				new DefaultHandler() });
-
-		server.setHandler(handlers);
+		configureLegacyConnectors(host, validator, options, maxConnections, 
+			maxRequestQueueSize);
+		
+		// Handlers contains VOMS webapp, status webapp, and as final
+		// choice the default handler to correctly handle 404 for non-handled
+		// contexts etc.
+		handlers.setHandlers(new Handler[] {
+			contexts,
+			new DefaultHandler() });
+		
+		// The rewrite handler, will internally foward
+		// generate-ac request to legacy voms ports to the appropriate 
+		// voms-admin webapp
+		RewriteHandler rh = new RewriteHandler();
+		rh.setRewritePathInfo(true);
+		rh.setRewriteRequestURI(true);
+		
+		rh.addRule(new VOMSRewriteRule(getConfiguredVOPortMappings()));
+		
+		// webapps are wrapped in the rewrite handler 
+		// or VOMS port rewriting will not work
+		rh.setHandler(handlers);
+		server.setHandler(rh);
 
 		server.setDumpAfterStart(false);
 		server.setDumpBeforeStop(false);
