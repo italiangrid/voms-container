@@ -151,8 +151,11 @@ public class Container {
 		
 		for (String vo: getConfiguredVONames()){
 			Properties sp = getVOServiceProperties(vo);
-			if (sp.containsKey(SERVICE_PORT_KEY))
-				voPorts.put(Integer.parseInt(sp.getProperty(SERVICE_PORT_KEY)), vo);
+			if (sp.containsKey(SERVICE_PORT_KEY)){
+				int port = Integer.parseInt(sp.getProperty(SERVICE_PORT_KEY));
+				if (port > 0)
+					voPorts.put(port, vo);
+			}
 		}
 		
 		return voPorts;
