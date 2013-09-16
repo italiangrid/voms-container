@@ -161,14 +161,31 @@ public class VOMSParser extends HttpParser {
 		if (isDone())
 			return 0;
 
+		IOException ex;
+		
 		if (_vomsBuffer == null)
 			_vomsBuffer = getHeaderBuffer();
 
 		if (_vomsBuffer.length() == 0) {
 		
-			int filled = fillBuffer();
+			int filled = -1;
+			
+			try{
+			
+				filled = fillBuffer();
+			
+			}catch(IOException e){
+				ex = e;
+				log.debug("Error filling buffer: {}", e.getMessage(), e);
+			}
+				
 			if (filled > 0)
 				progress++;
+			else if (filled < 0){
+				log.debug("Error reading from channel, declaring EOF and parser done");
+				setState(ParserStatus.DONE);
+				_vomsHandler.earlyEOF();
+			}
 		}
 		
 		byte ch;
@@ -207,7 +224,7 @@ public class VOMSParser extends HttpParser {
 
 	@Override
 	public boolean parseAvailable() throws IOException {
-
+		
 		if (_state.equals(ParserStatus.DONE))
 			return super.parseAvailable();
 
