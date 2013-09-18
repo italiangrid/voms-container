@@ -5,14 +5,9 @@ import java.io.IOException;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class VOMSGenerator extends HttpGenerator {
-
-	private static final Logger log = 
-		LoggerFactory.getLogger(VOMSGenerator.class);
 	
 	private  final VOMSConnection _connection;
 	public VOMSGenerator(VOMSConnection conn, Buffers buffers, EndPoint io) {

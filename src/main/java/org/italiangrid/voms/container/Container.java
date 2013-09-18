@@ -36,7 +36,6 @@ import org.italiangrid.utils.https.JettyRunThread;
 import org.italiangrid.utils.https.SSLOptions;
 import org.italiangrid.utils.https.ServerFactory;
 import org.italiangrid.utils.https.impl.canl.CANLListener;
-import org.italiangrid.utils.https.impl.canl.CANLSSLConnectorConfigurator;
 import org.italiangrid.voms.container.legacy.VOMSSslConnectorConfigurator;
 import org.italiangrid.voms.container.listeners.ServerListener;
 import org.italiangrid.voms.util.CertificateValidatorBuilder;

@@ -3,6 +3,7 @@ package org.italiangrid.voms.container.legacy;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,14 +23,21 @@ public class VOMSParser extends HttpParser {
 	public enum ParserStatus {
 		START, 
 		FOUND_ZERO, 
-		FOUND_VOMS_LEGACY_VOMS_REQUEST, 
-		DONE;
+		FOUND_HTTP_REQUEST,
+		FOUND_LEGACY_VOMS_REQUEST,
+		PARSED_VOMS_REQUEST,
+		NO_MORE_INPUT;
 	}
+	
+	private static final EnumSet<ParserStatus> finalStatuses = 
+		EnumSet.of(ParserStatus.FOUND_HTTP_REQUEST,
+			ParserStatus.PARSED_VOMS_REQUEST,
+			ParserStatus.NO_MORE_INPUT);
 	
 	private static final byte ZERO = '0';
 	private static final byte LEFT_BRACKET = '<';
 	
-	private ParserStatus _state = ParserStatus.START;
+	private ParserStatus _vomsParserStatus = ParserStatus.START;
 	private Buffer _vomsBuffer = null;
 	private final EndPoint _vomsEndpoint;
 	private final EventHandler _vomsHandler;
@@ -85,16 +94,18 @@ public class VOMSParser extends HttpParser {
 	}
 	
 	
-	protected void setState(ParserStatus s){
-		_state = s;
+	protected void setParserStatus(ParserStatus s){
+		_vomsParserStatus = s;
 	}
 	
 	
 	protected boolean isDone() {
-		return _state.equals(ParserStatus.DONE);
+		return finalStatuses.contains(_vomsParserStatus);
 	}
 	
 	protected int fillBuffer() throws IOException {
+		
+		int filled = -1;
 		
 		if (_vomsBuffer == null)
 			_vomsBuffer = getHeaderBuffer();
@@ -105,8 +116,16 @@ public class VOMSParser extends HttpParser {
 				_vomsBuffer.clear();
 				throw new IllegalStateException("VOMS buffer full!");
 			}
-
-			int filled = _vomsEndpoint.fill(_vomsBuffer);
+			
+			try{
+			
+				filled = _vomsEndpoint.fill(_vomsBuffer);
+				
+			}catch (EofException e){
+				log.debug("Caught eof exception: {}", e.getMessage(), e);
+				throw e;
+			}
+			log.debug("From endpoint filled {}", filled);
 			return filled;
 		}
 
@@ -139,7 +158,7 @@ public class VOMSParser extends HttpParser {
 			.translateLegacyRequest(_vomsBuffer,_requestBuffers);
 		
 		if (success){
-			setState(ParserStatus.DONE);
+			setParserStatus(ParserStatus.PARSED_VOMS_REQUEST);
 			try {
 				notifyHTTPRequestComplete();
 			} catch (IOException e) {
@@ -156,16 +175,15 @@ public class VOMSParser extends HttpParser {
 
 	protected int parseVOMSRequest() throws IOException {
 
+		log.debug("parseVOMSRequest(): endpoint: {}", _vomsEndpoint);
 		int progress = 0;
 
 		if (isDone())
 			return 0;
-
-		IOException ex;
 		
 		if (_vomsBuffer == null)
 			_vomsBuffer = getHeaderBuffer();
-
+		
 		if (_vomsBuffer.length() == 0) {
 		
 			int filled = -1;
@@ -173,18 +191,21 @@ public class VOMSParser extends HttpParser {
 			try{
 			
 				filled = fillBuffer();
+				log.debug("parseVOMSRequest(): _vomsBuffer: {}", _vomsBuffer);
 			
 			}catch(IOException e){
-				ex = e;
+			
 				log.debug("Error filling buffer: {}", e.getMessage(), e);
 			}
 				
 			if (filled > 0)
 				progress++;
+			
 			else if (filled < 0){
-				log.debug("Error reading from channel, declaring EOF and parser done");
-				setState(ParserStatus.DONE);
-				_vomsHandler.earlyEOF();
+				setPersistent(false);
+				log.debug("Error reading from channel, declaring parser done.");
+				setParserStatus(ParserStatus.NO_MORE_INPUT);
+				return -1;
 			}
 		}
 		
@@ -192,24 +213,30 @@ public class VOMSParser extends HttpParser {
 		
 		while (!isDone() && (_vomsBuffer.length() > 0)){
 			
-			if (_state ==  ParserStatus.START || _state == ParserStatus.FOUND_ZERO){
+			if (_vomsParserStatus ==  ParserStatus.START || _vomsParserStatus == ParserStatus.FOUND_ZERO){
 				ch = _vomsBuffer.peek();
+				log.debug("parseVOMSRequest(): first req char: {}", (char)ch);
+				
 				if (ch != ZERO && ch != LEFT_BRACKET){
 					// No VOMS nonsense around here, we're done, fall back to 
 					// Jetty HTTP parser
-					_state = ParserStatus.DONE;
+					log.debug("parseVOMSRequest(): no voms nonsense found, " +
+							"it's a plain http request");
+					setParserStatus(ParserStatus.FOUND_HTTP_REQUEST);
 					return progress;
 				}
 				
-				// Skip trailing zero
 				if (ch == ZERO){
 					_vomsBuffer.get();
 					progress++;
-					_state = ParserStatus.FOUND_ZERO;
+					log.debug("parseVOMSRequest(): found zero as first request char, " +
+							"swallowing it.");
+					setParserStatus(ParserStatus.FOUND_ZERO);
 			
 				} else {
-					
-					_state = ParserStatus.FOUND_VOMS_LEGACY_VOMS_REQUEST;
+					log.debug("parseVOMSRequest(): found voms legacy request. proceeding to" +
+							"parse XML");
+					setParserStatus(ParserStatus.FOUND_LEGACY_VOMS_REQUEST);
 					progress = progress + _vomsBuffer.length();
 					parseXML();					
 				}
@@ -225,10 +252,13 @@ public class VOMSParser extends HttpParser {
 	@Override
 	public boolean parseAvailable() throws IOException {
 		
-		if (_state.equals(ParserStatus.DONE))
+		if (isDone()){
+			log.debug("parseAvailable(): delegating up.");
 			return super.parseAvailable();
+		}
 
 		boolean progress = parseVOMSRequest() > 0;
+		log.debug("parseAvailable(): progress: {}", progress);
 
 		while (!isDone() && _vomsBuffer != null && _vomsBuffer.length() > 0) {
 			progress |= (parseVOMSRequest() > 0);
@@ -237,21 +267,36 @@ public class VOMSParser extends HttpParser {
 		return progress;
 
 	}
+	
+	@Override
+	public boolean isIdle() {
+		return _vomsParserStatus.equals(ParserStatus.START);
+	}
 
 	@Override
 	public boolean isComplete() {
 
-		if (_state.equals(ParserStatus.DONE))
-			return super.isComplete();
-		else
+		log.debug("isComplete(): vomsParserDone: {}", isDone());
+		if (isDone()){
+			boolean superComplete = super.isComplete();
+			log.debug("isComplete(): httpParserDone: {}", superComplete);
+			return superComplete;
+		}	else
 			return false;
 	}
 
 	@Override
 	public void reset() {
+		log.debug("reset()");
 		super.reset();
-		_state = ParserStatus.START;
+		setParserStatus(ParserStatus.START);
 		_vomsBuffer = null;
 		_requestBuffers.clearBuffers();
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s[status:%s];%s", getClass().getSimpleName(), 
+			_vomsParserStatus, super.toString());
 	}
 }
