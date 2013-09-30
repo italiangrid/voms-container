@@ -225,7 +225,8 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 		WebAppContext vomsWebappContext = new WebAppContext();
 		vomsWebappContext.setContextPath(contextPath);
 		vomsWebappContext.setTempDirectory(getJettyTmpDirForVO(vo));
-
+		
+		vomsWebappContext.setCompactPath(true);
 		vomsWebappContext.setParentLoaderPriority(false);
 
 		File webArchive = new File(warFile);
@@ -270,6 +271,7 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 
 		statusContext.setContextPath("/");
 		statusContext.setResourceBase(webappResourceDir);
+		statusContext.setCompactPath(true);
 
 		statusContext.setParentLoaderPriority(true);
 
