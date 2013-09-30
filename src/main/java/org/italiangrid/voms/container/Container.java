@@ -263,7 +263,7 @@ public class Container {
 		int maxRequestQueueSize = Integer
 			.parseInt(getConfigurationProperty(ConfigurationProperty.MAX_REQUEST_QUEUE_SIZE));
 
-		server = ServerFactory.newServer(host, Integer.parseInt(port),
+		server = ServerFactory.newServer(null, Integer.parseInt(port),
 			getSSLOptions(), validator, maxConnections, maxRequestQueueSize);
 		
 		addNameToHTTPSConnector();
@@ -273,7 +273,7 @@ public class Container {
 
 		configureDeploymentManager();
 		
-		configureLegacyConnectors(host, validator, options, maxConnections, 
+		configureLegacyConnectors(null, validator, options, maxConnections, 
 			maxRequestQueueSize);
 		
 		// Handlers contains VOMS webapp, status webapp, and as final
