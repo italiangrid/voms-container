@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import eu.emi.security.authn.x509.CrlCheckingMode;
+import eu.emi.security.authn.x509.OCSPCheckingMode;
 import eu.emi.security.authn.x509.X509CertChainValidatorExt;
 
 public class Container {
@@ -59,6 +61,7 @@ public class Container {
 
 	public static final String DEFAULT_TMP_PREFIX = "/var/tmp";
 	public static final String DEFAULT_DEPLOY_DIR = "/usr/share/voms-admin/vo.d";
+	public static final String DEFAULT_WORK_DIR = "/usr/share/voms-admin/work";
 	
 	public static final String HTTP_CONNECTOR_NAME = "voms-http";
 	public static final String HTTPS_CONNECTOR_NAME = "voms-https";
@@ -68,7 +71,7 @@ public class Container {
 	private static final String ARG_WAR = "war";
 	private static final String ARG_CONFDIR = "confdir";
 	private static final String ARG_DEPLOYDIR = "deploydir";
-
+	
 	private static final String SERVICE_PROPERTIES_FILE = "service.properties";
 	private static final String SERVICE_PORT_KEY = "voms.aa.x509.additional_port";
 	
@@ -80,6 +83,7 @@ public class Container {
 	private String war;
 	private String confDir;
 	private String deployDir;
+	private String workDir;
 
 	private String host;
 	private String port;
@@ -197,7 +201,7 @@ public class Container {
 		provider.setHostname(host);
 		provider.setPort(port);
 		provider.setWarFile(war);
-		
+		provider.setWorkDir(workDir);
 
 		deploymentManager.addAppProvider(provider);
 		deploymentManager.setContexts(contexts);
@@ -253,9 +257,15 @@ public class Container {
 
 		CANLListener l = new CANLListener();
 
-		X509CertChainValidatorExt validator = CertificateValidatorBuilder
-			.buildCertificateValidator(options.getTrustStoreDirectory(), l, l,
-				options.getTrustStoreRefreshIntervalInMsec());
+		CertificateValidatorBuilder builder = new CertificateValidatorBuilder();
+		
+		X509CertChainValidatorExt validator = builder.trustAnchorsDir(options.getTrustStoreDirectory())
+			.crlChecks(CrlCheckingMode.IF_VALID)
+			.lazyAnchorsLoading(false)
+			.ocspChecks(OCSPCheckingMode.IGNORE)
+			.storeUpdateListener(l)
+			.validationErrorListener(l)
+			.build();
 
 		int maxConnections = Integer
 			.parseInt(getConfigurationProperty(ConfigurationProperty.MAX_CONNECTIONS));
@@ -423,6 +433,9 @@ public class Container {
 
 		deployDir = String.format("%s/%s", SysconfigUtil.getInstallationPrefix(),
 			DEFAULT_DEPLOY_DIR).replaceAll("/+", "/");
+		
+		workDir = String.format("%s/%s", SysconfigUtil.getInstallationPrefix(),
+			DEFAULT_WORK_DIR).replaceAll("/+", "/");
 
 	}
 

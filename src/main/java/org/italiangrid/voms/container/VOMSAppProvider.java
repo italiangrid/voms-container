@@ -41,8 +41,10 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 	private String configurationDir;
 	private String warFile;
 	private String deploymentDir;
+	private String workDir;
 	private String hostname;
 	private String port;
+	
 
 	private int scanIntervalInSeconds = DEFAULT_SCAN_INTERVAL_IN_SECONDS;
 
@@ -192,8 +194,10 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 	 * TODO: check if recent versions of xwork solve this.
 	 */
 	protected File getJettyTmpDirForVO(String vo) {
-
-		String baseDirPath = String.format("%s/%s/%s", DEFAULT_TMP_PREFIX,
+		
+		String tmpWorkDir = (workDir == null ) ? DEFAULT_TMP_PREFIX : workDir;
+		
+		String baseDirPath = String.format("%s/%s/%s", tmpWorkDir,
 			"voms-webapp", vo).replaceAll("/+", "/");
 
 		File basePath = new File(baseDirPath);
@@ -438,4 +442,16 @@ public class VOMSAppProvider extends AbstractLifeCycle implements AppProvider {
 		this.port = port;
 	}
 
+	
+	public String getWorkDir() {
+	
+		return workDir;
+	}
+
+	
+	public void setWorkDir(String workDir) {
+	
+		this.workDir = workDir;
+	}
+	
 }
